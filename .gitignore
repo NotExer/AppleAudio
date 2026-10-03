@@ -1,0 +1,13 @@
+build/
+dist/
+out/
+package-input/
+release/
+tools/
+lib/
+ocr-languages/
+piper-assets/voice/
+piper-assets/sample.*
+piper-wheels/
+*.spec
+__pycache__/
