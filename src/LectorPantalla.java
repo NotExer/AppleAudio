@@ -57,44 +57,51 @@ public class LectorPantalla {
     }
 
     private void show() {
+        configureAppearance();
         restoreShortcut();
         frame = new JFrame("Lector de pantalla a voz");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setContentPane(createContent());
-        frame.pack(); frame.setMinimumSize(new Dimension(470, 285));
+        frame.pack(); frame.setMinimumSize(new Dimension(580, 510));
         frame.setLocationRelativeTo(null); frame.setVisible(true);
         startHotkeyListener();
         loadVoices();
     }
 
     private JPanel createContent() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(22, 24, 18, 24));
-        GridBagConstraints c = new GridBagConstraints(); c.insets = new Insets(7, 0, 7, 12); c.anchor = GridBagConstraints.WEST;
-        JLabel title = new JLabel("Leer texto de la pantalla"); title.setFont(title.getFont().deriveFont(Font.BOLD, 19f));
-        c.gridx=0; c.gridy=0; c.gridwidth=2; panel.add(title,c); c.gridwidth=1;
-        add(panel, c, 1, "Atajo", shortcutField = new JTextField(20));
+        JPanel root = new JPanel(new GridBagLayout()); root.setBackground(new Color(246,247,251));
+        RoundedPanel card = new RoundedPanel(20, Color.WHITE); card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(BorderFactory.createEmptyBorder(28,30,24,30)); card.setPreferredSize(new Dimension(600,455));
+        JPanel header=new JPanel(); header.setOpaque(false); header.setLayout(new BoxLayout(header,BoxLayout.Y_AXIS)); header.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel eyebrow=new JLabel("LECTOR DE PANTALLA"); eyebrow.setFont(new Font("Segoe UI",Font.BOLD,11)); eyebrow.setForeground(new Color(92,98,112));
+        JLabel title = new JLabel("Escucha solo lo importante"); title.setFont(new Font("Segoe UI",Font.BOLD,25)); title.setForeground(new Color(20,24,34));
+        JLabel subtitle=new JLabel("Pulsa tu atajo, marca un área y la app la leerá."); subtitle.setFont(new Font("Segoe UI",Font.PLAIN,14)); subtitle.setForeground(new Color(88,94,106));
+        header.add(eyebrow);header.add(Box.createVerticalStrut(5));header.add(title);header.add(Box.createVerticalStrut(5));header.add(subtitle);card.add(header);card.add(Box.createVerticalStrut(25));
+        addFormRow(card, "Atajo global", shortcutField = new JTextField(20));
         shortcutField.setText(comboText()); shortcutField.setEditable(false);
-        shortcutField.setToolTipText("Haz clic aquí y presiona la combinación de teclas");
+        styleField(shortcutField); shortcutField.setToolTipText("Haz clic aquí y presiona la tecla o combinación");
         shortcutField.addKeyListener(new KeyAdapter() { @Override public void keyPressed(KeyEvent e) { captureShortcut(e); } });
         languageBox = new JComboBox<>(LANGUAGES.keySet().toArray(String[]::new));
         languageBox.setSelectedItem(PREFS.get("language", "Español"));
         languageBox.addActionListener(e -> PREFS.put("language", (String) languageBox.getSelectedItem()));
-        add(panel,c,2,"Idioma",languageBox);
+        styleField(languageBox); addFormRow(card,"Idioma de lectura",languageBox);
         voiceBox = new JComboBox<>(); voiceBox.addItem("Voz predeterminada de Windows");
         voiceBox.addActionListener(e -> PREFS.put("voice", String.valueOf(voiceBox.getSelectedItem())));
-        add(panel,c,3,"Voz",voiceBox);
-        speed = new JSlider(-10,10,PREFS.getInt("speed",0)); speed.setMajorTickSpacing(5); speed.setPaintTicks(true); speed.setPaintLabels(true);
+        styleField(voiceBox); addFormRow(card,"Voz",voiceBox);
+        speed = new JSlider(-10,10,PREFS.getInt("speed",0)); speed.setMajorTickSpacing(5); speed.setPaintTicks(true); speed.setPaintLabels(true); speed.setOpaque(false); speed.setAlignmentX(Component.LEFT_ALIGNMENT);
         speed.addChangeListener(e -> PREFS.putInt("speed",speed.getValue()));
-        add(panel,c,4,"Velocidad",speed);
-        c.gridx=0;c.gridy=5;c.gridwidth=2;c.insets=new Insets(14,0,0,0);
-        status = new JLabel("Pulsa el atajo y arrastra el texto que quieras leer."); status.setForeground(new Color(45, 95, 155)); panel.add(status,c);
-        return panel;
+        JLabel speedLabel=fieldLabel("Velocidad"); card.add(speedLabel);card.add(speed);card.add(Box.createVerticalStrut(13));
+        status = new JLabel("Listo para leer una selección"); status.setFont(new Font("Segoe UI",Font.PLAIN,13)); status.setForeground(new Color(34,105,180)); status.setAlignmentX(Component.LEFT_ALIGNMENT);card.add(status);
+        card.add(Box.createVerticalGlue()); JLabel hint=new JLabel("F8 abre el selector  ·  Esc cancela");hint.setFont(new Font("Segoe UI",Font.PLAIN,12));hint.setForeground(new Color(120,125,137));hint.setAlignmentX(Component.LEFT_ALIGNMENT);card.add(hint);
+        GridBagConstraints c=new GridBagConstraints();c.gridx=0;c.gridy=0;c.weightx=1;c.weighty=1;c.anchor=GridBagConstraints.CENTER;c.fill=GridBagConstraints.NONE;root.add(card,c); return root;
     }
-    private void add(JPanel p, GridBagConstraints c, int y, String label, JComponent component) {
-        c.gridy=y;c.gridx=0;c.gridwidth=1;c.weightx=0;c.fill=GridBagConstraints.NONE; p.add(new JLabel(label),c);
-        c.gridx=1;c.weightx=1;c.fill=GridBagConstraints.HORIZONTAL;c.insets=new Insets(7,0,7,0);p.add(component,c);c.insets=new Insets(7,0,7,12);
+    private void addFormRow(JPanel parent,String label,JComponent field){ parent.add(fieldLabel(label));parent.add(Box.createVerticalStrut(6));field.setAlignmentX(Component.LEFT_ALIGNMENT);field.setMaximumSize(new Dimension(540,38));parent.add(field);parent.add(Box.createVerticalStrut(15)); }
+    private JLabel fieldLabel(String text){ JLabel label=new JLabel(text);label.setFont(new Font("Segoe UI",Font.BOLD,12));label.setForeground(new Color(57,63,75));label.setAlignmentX(Component.LEFT_ALIGNMENT);return label; }
+    private void styleField(JComponent field){ field.setFont(new Font("Segoe UI",Font.PLAIN,14));field.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(210,215,224)),BorderFactory.createEmptyBorder(7,10,7,10)));field.setBackground(new Color(250,251,253)); }
+    private void configureAppearance() {
+        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch(Exception ignored) { }
     }
+    private static class RoundedPanel extends JPanel { private final int radius; private final Color fill; RoundedPanel(int radius,Color fill){this.radius=radius;this.fill=fill;setOpaque(false);} @Override protected void paintComponent(Graphics g){Graphics2D g2=(Graphics2D)g.create();g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);g2.setColor(fill);g2.fillRoundRect(0,0,getWidth(),getHeight(),radius,radius);g2.dispose();super.paintComponent(g);} }
     private void restoreShortcut() {
         modifiers=PREFS.getInt("modifiers",MOD_CONTROL|MOD_SHIFT); virtualKey=PREFS.getInt("key",KeyEvent.VK_R);
     }
