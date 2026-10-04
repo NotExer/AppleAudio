@@ -1,6 +1,7 @@
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinUser;
 import com.sun.jna.platform.win32.WinUser.MSG;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -99,7 +100,14 @@ public class LectorPantalla {
     private JLabel fieldLabel(String text){ JLabel label=new JLabel(text);label.setFont(new Font("Segoe UI",Font.BOLD,12));label.setForeground(new Color(57,63,75));label.setAlignmentX(Component.LEFT_ALIGNMENT);return label; }
     private void styleField(JComponent field){ field.setFont(new Font("Segoe UI",Font.PLAIN,14));field.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(210,215,224)),BorderFactory.createEmptyBorder(7,10,7,10)));field.setBackground(new Color(250,251,253)); }
     private void configureAppearance() {
-        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch(Exception ignored) { }
+        FlatMacLightLaf.setup();
+        UIManager.put("Component.arc", 14);
+        UIManager.put("Button.arc", 14);
+        UIManager.put("TextComponent.arc", 12);
+        UIManager.put("ComboBox.arc", 12);
+        UIManager.put("Component.focusWidth", 2);
+        UIManager.put("Component.focusColor", new Color(54, 125, 229));
+        UIManager.put("Slider.trackWidth", 6);
     }
     private static class RoundedPanel extends JPanel { private final int radius; private final Color fill; RoundedPanel(int radius,Color fill){this.radius=radius;this.fill=fill;setOpaque(false);} @Override protected void paintComponent(Graphics g){Graphics2D g2=(Graphics2D)g.create();g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);g2.setColor(fill);g2.fillRoundRect(0,0,getWidth(),getHeight(),radius,radius);g2.dispose();super.paintComponent(g);} }
     private void restoreShortcut() {
