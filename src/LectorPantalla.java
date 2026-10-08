@@ -233,6 +233,13 @@ public class LectorPantalla {
         return text.toString().trim();
     }
     private String findTesseract() {
+        // jpackage expone la ruta del lanzador. Es la fuente más fiable al usar
+        // el instalador: <instalación>\\app\\tesseract\\tesseract.exe.
+        String launcher = System.getProperty("jpackage.app-path");
+        if (launcher != null && !launcher.isBlank()) {
+            File included = new File(new File(launcher).getParentFile(), "app\\tesseract\\tesseract.exe");
+            if (included.isFile()) return included.getAbsolutePath();
+        }
         try {
             File jar = new File(LectorPantalla.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             File included = new File(jar.getParentFile(), "tesseract\\tesseract.exe");
