@@ -1,7 +1,7 @@
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinUser;
 import com.sun.jna.platform.win32.WinUser.MSG;
-import com.formdev.flatlaf.themes.FlatMacLightLaf;
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -34,8 +34,7 @@ public class LectorPantalla {
     private static final Map<String, String> LANGUAGES = new LinkedHashMap<>();
     private static final String PIPER_VOICE = "Voz neuronal española — Piper (sin conexión)";
     static {
-        LANGUAGES.put("Español", "spa"); LANGUAGES.put("English", "eng");
-        LANGUAGES.put("Français", "fra"); LANGUAGES.put("Deutsch", "deu"); LANGUAGES.put("Português", "por");
+        LANGUAGES.put("Español", "spa");
     }
 
     private JFrame frame;
@@ -63,50 +62,55 @@ public class LectorPantalla {
         frame = new JFrame("Lector de pantalla a voz");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setContentPane(createContent());
-        frame.pack(); frame.setMinimumSize(new Dimension(580, 510));
+        frame.pack(); frame.setMinimumSize(new Dimension(820, 540));
         frame.setLocationRelativeTo(null); frame.setVisible(true);
         startHotkeyListener();
         loadVoices();
     }
 
     private JPanel createContent() {
-        JPanel root = new JPanel(new GridBagLayout()); root.setBackground(new Color(246,247,251));
-        RoundedPanel card = new RoundedPanel(20, Color.WHITE); card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(BorderFactory.createEmptyBorder(28,30,24,30)); card.setPreferredSize(new Dimension(600,455));
-        JPanel header=new JPanel(); header.setOpaque(false); header.setLayout(new BoxLayout(header,BoxLayout.Y_AXIS)); header.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JLabel eyebrow=new JLabel("LECTOR DE PANTALLA"); eyebrow.setFont(new Font("Segoe UI",Font.BOLD,11)); eyebrow.setForeground(new Color(92,98,112));
-        JLabel title = new JLabel("Escucha solo lo importante"); title.setFont(new Font("Segoe UI",Font.BOLD,25)); title.setForeground(new Color(20,24,34));
-        JLabel subtitle=new JLabel("Pulsa tu atajo, marca un área y la app la leerá."); subtitle.setFont(new Font("Segoe UI",Font.PLAIN,14)); subtitle.setForeground(new Color(88,94,106));
-        header.add(eyebrow);header.add(Box.createVerticalStrut(5));header.add(title);header.add(Box.createVerticalStrut(5));header.add(subtitle);card.add(header);card.add(Box.createVerticalStrut(25));
-        addFormRow(card, "Atajo global", shortcutField = new JTextField(20));
+        Color canvas=new Color(12,15,20), surface=new Color(20,24,32), elevated=new Color(28,34,45), primary=new Color(117,232,185), secondary=new Color(164,174,191);
+        JPanel root=new JPanel(new BorderLayout());root.setBackground(canvas);root.setBorder(BorderFactory.createEmptyBorder(22,22,22,22));
+        RoundedPanel shell=new RoundedPanel(24,surface);shell.setLayout(new BorderLayout());root.add(shell);
+        RoundedPanel sidebar=new RoundedPanel(24,new Color(17,21,28));sidebar.setLayout(new BoxLayout(sidebar,BoxLayout.Y_AXIS));sidebar.setBorder(BorderFactory.createEmptyBorder(28,25,26,25));sidebar.setPreferredSize(new Dimension(205,0));
+        JLabel brand=label("◉  SONORA",12,Font.BOLD,primary); JLabel brandSub=label("LECTOR DE PANTALLA",10,Font.BOLD,new Color(105,115,132));sidebar.add(brand);sidebar.add(Box.createVerticalStrut(6));sidebar.add(brandSub);sidebar.add(Box.createVerticalGlue());
+        RoundedPanel ready=new RoundedPanel(14,new Color(25,46,42));ready.setLayout(new BoxLayout(ready,BoxLayout.Y_AXIS));ready.setBorder(BorderFactory.createEmptyBorder(14,14,14,14));ready.setMaximumSize(new Dimension(160,80));
+        ready.add(label("●  LISTO",11,Font.BOLD,primary));ready.add(Box.createVerticalStrut(4));ready.add(label("F8 para seleccionar",11,Font.PLAIN,new Color(183,206,199)));sidebar.add(ready);sidebar.add(Box.createVerticalStrut(15));sidebar.add(label("Todo se procesa localmente",11,Font.PLAIN,new Color(114,125,143)));shell.add(sidebar,BorderLayout.WEST);
+        JPanel content=new JPanel();content.setOpaque(false);content.setLayout(new BoxLayout(content,BoxLayout.Y_AXIS));content.setBorder(BorderFactory.createEmptyBorder(31,35,27,35));shell.add(content,BorderLayout.CENTER);
+        JLabel eyebrow=label("LECTURA INSTANTÁNEA",11,Font.BOLD,primary); JLabel title=label("Tu pantalla, en voz.",30,Font.BOLD,Color.WHITE); JLabel subtitle=label("Selecciona solo el fragmento que importa y escúchalo sin distracciones.",14,Font.PLAIN,secondary);
+        content.add(eyebrow);content.add(Box.createVerticalStrut(8));content.add(title);content.add(Box.createVerticalStrut(6));content.add(subtitle);content.add(Box.createVerticalStrut(25));
+        RoundedPanel shortcutCard=new RoundedPanel(18,elevated);shortcutCard.setLayout(new BorderLayout(18,0));shortcutCard.setBorder(BorderFactory.createEmptyBorder(17,19,17,19));shortcutCard.setMaximumSize(new Dimension(600,84));
+        JPanel intro=new JPanel();intro.setOpaque(false);intro.setLayout(new BoxLayout(intro,BoxLayout.Y_AXIS));intro.add(label("CAPTURAR Y LEER",11,Font.BOLD,primary));intro.add(Box.createVerticalStrut(4));intro.add(label("Pulsa el atajo para marcar texto",14,Font.BOLD,Color.WHITE));shortcutCard.add(intro,BorderLayout.CENTER);
+        shortcutField = new JTextField(9);
         shortcutField.setText(comboText()); shortcutField.setEditable(false);
-        styleField(shortcutField); shortcutField.setToolTipText("Haz clic aquí y presiona la tecla o combinación");
+        styleField(shortcutField);shortcutField.setHorizontalAlignment(SwingConstants.CENTER);shortcutField.setPreferredSize(new Dimension(120,42));shortcutField.setForeground(Color.WHITE);shortcutField.setBackground(new Color(42,51,66)); shortcutField.setToolTipText("Haz clic aquí y presiona la tecla o combinación");
         shortcutField.addKeyListener(new KeyAdapter() { @Override public void keyPressed(KeyEvent e) { captureShortcut(e); } });
+        shortcutCard.add(shortcutField,BorderLayout.EAST);content.add(shortcutCard);content.add(Box.createVerticalStrut(23));
+        JPanel settings=new JPanel(new GridLayout(1,2,14,0));settings.setOpaque(false);settings.setMaximumSize(new Dimension(600,106));
         languageBox = new JComboBox<>(LANGUAGES.keySet().toArray(String[]::new));
         languageBox.setSelectedItem(PREFS.get("language", "Español"));
         languageBox.addActionListener(e -> PREFS.put("language", (String) languageBox.getSelectedItem()));
-        styleField(languageBox); addFormRow(card,"Idioma de lectura",languageBox);
-        voiceBox = new JComboBox<>(); voiceBox.addItem("Voz predeterminada de Windows");
+        styleField(languageBox); settings.add(settingCard("IDIOMA",languageBox,elevated,secondary));
+        voiceBox = new JComboBox<>(); voiceBox.addItem(PIPER_VOICE);
         voiceBox.addActionListener(e -> PREFS.put("voice", String.valueOf(voiceBox.getSelectedItem())));
-        styleField(voiceBox); addFormRow(card,"Voz",voiceBox);
-        speed = new JSlider(-10,10,PREFS.getInt("speed",0)); speed.setMajorTickSpacing(5); speed.setPaintTicks(true); speed.setPaintLabels(true); speed.setOpaque(false); speed.setAlignmentX(Component.LEFT_ALIGNMENT);
+        styleField(voiceBox);settings.add(settingCard("VOZ",voiceBox,elevated,secondary));content.add(settings);content.add(Box.createVerticalStrut(18));
+        RoundedPanel rateCard=new RoundedPanel(18,elevated);rateCard.setLayout(new BorderLayout(15,0));rateCard.setBorder(BorderFactory.createEmptyBorder(13,18,12,18));rateCard.setMaximumSize(new Dimension(600,72));rateCard.add(label("VELOCIDAD",11,Font.BOLD,secondary),BorderLayout.WEST);
+        speed = new JSlider(-10,10,PREFS.getInt("speed",0)); speed.setMajorTickSpacing(5); speed.setPaintTicks(false); speed.setPaintLabels(false); speed.setOpaque(false); speed.setAlignmentX(Component.LEFT_ALIGNMENT);
         speed.addChangeListener(e -> PREFS.putInt("speed",speed.getValue()));
-        JLabel speedLabel=fieldLabel("Velocidad"); card.add(speedLabel);card.add(speed);card.add(Box.createVerticalStrut(13));
-        status = new JLabel("Listo para leer una selección"); status.setFont(new Font("Segoe UI",Font.PLAIN,13)); status.setForeground(new Color(34,105,180)); status.setAlignmentX(Component.LEFT_ALIGNMENT);card.add(status);
-        card.add(Box.createVerticalGlue()); JLabel hint=new JLabel("F8 abre el selector  ·  Esc cancela");hint.setFont(new Font("Segoe UI",Font.PLAIN,12));hint.setForeground(new Color(120,125,137));hint.setAlignmentX(Component.LEFT_ALIGNMENT);card.add(hint);
-        GridBagConstraints c=new GridBagConstraints();c.gridx=0;c.gridy=0;c.weightx=1;c.weighty=1;c.anchor=GridBagConstraints.CENTER;c.fill=GridBagConstraints.NONE;root.add(card,c); return root;
+        rateCard.add(speed,BorderLayout.CENTER);content.add(rateCard);content.add(Box.createVerticalStrut(20));
+        status=label("●  Preparado para leer una selección",13,Font.PLAIN,primary);content.add(status);content.add(Box.createVerticalGlue());content.add(label("Selecciona un área · Esc cancela · Tu texto no sale del equipo",11,Font.PLAIN,new Color(112,123,140)));return root;
     }
-    private void addFormRow(JPanel parent,String label,JComponent field){ parent.add(fieldLabel(label));parent.add(Box.createVerticalStrut(6));field.setAlignmentX(Component.LEFT_ALIGNMENT);field.setMaximumSize(new Dimension(540,38));parent.add(field);parent.add(Box.createVerticalStrut(15)); }
-    private JLabel fieldLabel(String text){ JLabel label=new JLabel(text);label.setFont(new Font("Segoe UI",Font.BOLD,12));label.setForeground(new Color(57,63,75));label.setAlignmentX(Component.LEFT_ALIGNMENT);return label; }
-    private void styleField(JComponent field){ field.setFont(new Font("Segoe UI",Font.PLAIN,14));field.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(210,215,224)),BorderFactory.createEmptyBorder(7,10,7,10)));field.setBackground(new Color(250,251,253)); }
+    private JPanel settingCard(String title,JComponent field,Color fill,Color muted){RoundedPanel card=new RoundedPanel(18,fill);card.setLayout(new BoxLayout(card,BoxLayout.Y_AXIS));card.setBorder(BorderFactory.createEmptyBorder(13,16,13,16));card.add(label(title,11,Font.BOLD,muted));card.add(Box.createVerticalStrut(7));field.setMaximumSize(new Dimension(270,36));card.add(field);return card;}
+    private JLabel label(String text,int size,int style,Color color){JLabel label=new JLabel(text);label.setFont(new Font("Segoe UI",style,size));label.setForeground(color);label.setAlignmentX(Component.LEFT_ALIGNMENT);return label;}
+    private void styleField(JComponent field){ field.setFont(new Font("Segoe UI",Font.PLAIN,13));field.setBorder(BorderFactory.createEmptyBorder(6,9,6,9)); }
     private void configureAppearance() {
-        FlatMacLightLaf.setup();
+        FlatMacDarkLaf.setup();
         UIManager.put("Component.arc", 14);
         UIManager.put("Button.arc", 14);
         UIManager.put("TextComponent.arc", 12);
         UIManager.put("ComboBox.arc", 12);
         UIManager.put("Component.focusWidth", 2);
-        UIManager.put("Component.focusColor", new Color(54, 125, 229));
+        UIManager.put("Component.focusColor", new Color(117, 232, 185));
         UIManager.put("Slider.trackWidth", 6);
     }
     private static class RoundedPanel extends JPanel { private final int radius; private final Color fill; RoundedPanel(int radius,Color fill){this.radius=radius;this.fill=fill;setOpaque(false);} @Override protected void paintComponent(Graphics g){Graphics2D g2=(Graphics2D)g.create();g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);g2.setColor(fill);g2.fillRoundRect(0,0,getWidth(),getHeight(),radius,radius);g2.dispose();super.paintComponent(g);} }
@@ -241,10 +245,10 @@ public class LectorPantalla {
     }
     private void speak(String text) throws Exception {
         if(speaking!=null&&speaking.isAlive()) speaking.destroyForcibly();
-        String text64=Base64.getEncoder().encodeToString(text.getBytes(StandardCharsets.UTF_16LE)); String voice=String.valueOf(voiceBox.getSelectedItem());
+        text=naturalizePunctuation(text); String text64=Base64.getEncoder().encodeToString(text.getBytes(StandardCharsets.UTF_16LE)); String voice=String.valueOf(voiceBox.getSelectedItem());
         if(PIPER_VOICE.equals(voice)) { speakWithPiper(text); return; }
         String voice64=Base64.getEncoder().encodeToString(voice.getBytes(StandardCharsets.UTF_16LE));
-        String script="$t=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('"+text64+"'));$v=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('"+voice64+"'));Add-Type -AssemblyName System.Speech;$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;$match=$s.GetInstalledVoices()|Where-Object {$_.VoiceInfo.Name -eq $v}|Select-Object -First 1;if($match){$s.SelectVoice($v)};$s.Rate="+speed.getValue()+";$s.Speak($t)";
+        String script="$t=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('"+text64+"'));$v=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('"+voice64+"'));Add-Type -AssemblyName System.Speech;$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;$match=$s.GetInstalledVoices()|Where-Object {$_.VoiceInfo.Name -eq $v}|Select-Object -First 1;if($match){$s.SelectVoice($v)};$s.Rate="+speed.getValue()+";$safe=[Security.SecurityElement]::Escape($t);$safe=$safe -replace ',','<break time=''180ms''/>' -replace ';','<break time=''280ms''/>' -replace '([.!?])','$1<break time=''480ms''/>';$s.SpeakSsml(\"<speak version='1.0' xml:lang='es-ES'><prosody rate='"+speed.getValue()+"'>$safe</prosody></speak>\")";
         String encoded=Base64.getEncoder().encodeToString(script.getBytes(StandardCharsets.UTF_16LE)); speaking=new ProcessBuilder("powershell.exe","-NoProfile","-EncodedCommand",encoded).start();
     }
     private void speakWithPiper(String text) throws Exception {
@@ -261,7 +265,8 @@ public class LectorPantalla {
     private File bundledFile(String relative) {
         try { File jar=new File(LectorPantalla.class.getProtectionDomain().getCodeSource().getLocation().toURI()); return new File(jar.getParentFile(),relative); } catch(Exception e) { return new File(relative); }
     }
-    private void loadVoices() { new Thread(() -> { try { Process p=new ProcessBuilder("powershell.exe","-NoProfile","-Command","Add-Type -AssemblyName System.Speech;(New-Object System.Speech.Synthesis.SpeechSynthesizer).GetInstalledVoices() | ForEach-Object {$_.VoiceInfo.Name}").start();String list=readAll(p.getInputStream());p.waitFor();SwingUtilities.invokeLater(()-> {String selected=PREFS.get("voice",PIPER_VOICE);if(selected.equals("Microsoft David Desktop")||selected.equals("Voz predeterminada de Windows"))selected=PIPER_VOICE;voiceBox.removeAllItems();voiceBox.addItem(PIPER_VOICE);voiceBox.addItem("Voz predeterminada de Windows");for(String line:list.split("\\R"))if(!line.isBlank())voiceBox.addItem(line.trim());voiceBox.setSelectedItem(selected);}); }catch(Exception ignored){} },"voice-loader").start(); }
+    private String naturalizePunctuation(String text) { return text.replaceAll("\\s+", " ").replaceAll("\\s*([,;:.!?])\\s*", "$1 ").replace("…", "...").trim(); }
+    private void loadVoices() { new Thread(() -> { try { Process p=new ProcessBuilder("powershell.exe","-NoProfile","-Command","Add-Type -AssemblyName System.Speech;(New-Object System.Speech.Synthesis.SpeechSynthesizer).GetInstalledVoices() | Where-Object {$_.VoiceInfo.Culture.Name -like 'es-*'} | ForEach-Object {$_.VoiceInfo.Name}").start();String list=readAll(p.getInputStream());p.waitFor();SwingUtilities.invokeLater(()-> {String selected=PREFS.get("voice",PIPER_VOICE);voiceBox.removeAllItems();voiceBox.addItem(PIPER_VOICE);for(String line:list.split("\\R"))if(!line.isBlank())voiceBox.addItem(line.trim());if(voiceBox.getItemCount()==1 || selected.equals("Microsoft David Desktop")||selected.equals("Microsoft Zira Desktop")||selected.equals("Microsoft Mark Desktop")||selected.equals("Voz predeterminada de Windows"))selected=PIPER_VOICE;voiceBox.setSelectedItem(selected);}); }catch(Exception ignored){} },"voice-loader").start(); }
     private String readAll(InputStream in) throws Exception { ByteArrayOutputStream out=new ByteArrayOutputStream();in.transferTo(out);return out.toString(StandardCharsets.UTF_8); }
     private void setStatus(String message,boolean error) { if(status!=null){status.setText(message);status.setForeground(error?new Color(170,55,45):new Color(45,95,155));} }
 }

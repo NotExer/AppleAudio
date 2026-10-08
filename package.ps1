@@ -25,6 +25,6 @@ Copy-Item (Join-Path $PSScriptRoot 'ocr-languages\*.traineddata') (Join-Path $oc
 
 $wix = Join-Path $PSScriptRoot 'tools\wix'
 $env:Path = "$wix;$env:Path"
-jpackage --type exe --dest $release --name 'Lector de Pantalla' --app-version '1.1.2' --input $input --main-jar LectorPantalla.jar --main-class LectorPantalla --vendor 'AppleAudio' --description 'Lee en voz alta el texto visible en pantalla.' --win-per-user-install --win-shortcut --win-menu --win-dir-chooser
+jpackage --type exe --dest $release --name 'Lector de Pantalla' --app-version '1.2.0' --input $input --main-jar LectorPantalla.jar --main-class LectorPantalla --vendor 'AppleAudio' --description 'Lee en voz alta el texto visible en pantalla.' --win-per-user-install --win-shortcut --win-menu --win-dir-chooser
 if ($LASTEXITCODE -ne 0) { throw "Falló la creación del instalador (código $LASTEXITCODE)." }
 Write-Host "Instalador creado en $release"
