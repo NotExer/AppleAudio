@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-# Genera un instalador EXE autocontenido: Java, OCR e idiomas viajan dentro de él.
+# Genera una edición portátil y un instalador autocontenidos.
 & (Join-Path $PSScriptRoot 'build.ps1')
 $input = Join-Path $PSScriptRoot 'package-input'
 $release = Join-Path $PSScriptRoot 'release'
@@ -26,6 +26,12 @@ Copy-Item (Join-Path $PSScriptRoot 'ocr-languages\*.traineddata') (Join-Path $oc
 $wix = Join-Path $PSScriptRoot 'tools\wix'
 $env:Path = "$wix;$env:Path"
 & (Join-Path $PSScriptRoot 'generate-icon.ps1')
-jpackage --type exe --dest $release --name 'Lector de Pantalla' --app-version '1.3.0' --input $input --main-jar LectorPantalla.jar --main-class LectorPantalla --icon (Join-Path $PSScriptRoot 'assets\sonora.ico') --vendor 'AppleAudio' --description 'Lee en voz alta el texto visible en pantalla.' --win-per-user-install --win-shortcut --win-menu --win-dir-chooser
+$portable = Join-Path $release 'AppleAudio'
+if (Test-Path -LiteralPath $portable) { Remove-Item -LiteralPath $portable -Recurse -Force }
+$common = @('--dest', $release, '--name', 'AppleAudio', '--app-version', '1.4.0', '--input', $input, '--main-jar', 'LectorPantalla.jar', '--main-class', 'LectorPantalla', '--icon', (Join-Path $PSScriptRoot 'assets\sonora.ico'), '--vendor', 'AppleAudio', '--description', 'Lee en voz alta el texto visible en pantalla.')
+jpackage --type app-image @common
+if ($LASTEXITCODE -ne 0) { throw "Falló la creación de la edición portátil (código $LASTEXITCODE)." }
+jpackage --type exe @common --win-per-user-install --win-shortcut --win-menu --win-dir-chooser
 if ($LASTEXITCODE -ne 0) { throw "Falló la creación del instalador (código $LASTEXITCODE)." }
+Write-Host "Edición portátil: $(Join-Path $portable 'AppleAudio.exe')"
 Write-Host "Instalador creado en $release"

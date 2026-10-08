@@ -30,7 +30,7 @@ public class LectorPantalla {
     private static final int WM_HOTKEY = 0x0312;
     private static final int HOTKEY_ID = 1;
     private static final int MOD_ALT = 0x0001, MOD_CONTROL = 0x0002, MOD_SHIFT = 0x0004, MOD_WIN = 0x0008;
-    private static final Preferences PREFS = Preferences.userNodeForPackage(LectorPantalla.class);
+    private static final Preferences PREFS = Preferences.userRoot().node("AppleAudio");
     private static final Map<String, String> LANGUAGES = new LinkedHashMap<>();
     private static final String PIPER_VOICE = "Voz neuronal española — Piper (sin conexión)";
     static {
@@ -59,7 +59,7 @@ public class LectorPantalla {
     private void show() {
         configureAppearance();
         restoreShortcut();
-        frame = new JFrame("Lector de pantalla a voz");
+        frame = new JFrame("AppleAudio");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setIconImage(createAppIcon());
         frame.setContentPane(createContent());
@@ -74,7 +74,7 @@ public class LectorPantalla {
         JPanel root=new JPanel(new BorderLayout());root.setBackground(canvas);root.setBorder(BorderFactory.createEmptyBorder(22,22,22,22));
         RoundedPanel shell=new RoundedPanel(24,surface);shell.setLayout(new BorderLayout());root.add(shell);
         RoundedPanel sidebar=new RoundedPanel(24,new Color(17,21,28));sidebar.setLayout(new BoxLayout(sidebar,BoxLayout.Y_AXIS));sidebar.setBorder(BorderFactory.createEmptyBorder(28,25,26,25));sidebar.setPreferredSize(new Dimension(205,0));
-        JLabel brand=label("Sonora",19,Font.BOLD,Color.WHITE); JLabel brandSub=label("Lector de pantalla",11,Font.PLAIN,new Color(151,161,178));sidebar.add(brand);sidebar.add(Box.createVerticalStrut(5));sidebar.add(brandSub);sidebar.add(Box.createVerticalGlue());
+        JLabel brand=label("AppleAudio",19,Font.BOLD,Color.WHITE); JLabel brandSub=label("Lector de pantalla",11,Font.PLAIN,new Color(151,161,178));sidebar.add(brand);sidebar.add(Box.createVerticalStrut(5));sidebar.add(brandSub);sidebar.add(Box.createVerticalGlue());
         RoundedPanel ready=new RoundedPanel(14,new Color(25,46,42));ready.setLayout(new BoxLayout(ready,BoxLayout.Y_AXIS));ready.setBorder(BorderFactory.createEmptyBorder(14,14,14,14));ready.setMaximumSize(new Dimension(160,80));
         ready.add(label("Listo",11,Font.BOLD,primary));ready.add(Box.createVerticalStrut(4));ready.add(label("F8 para seleccionar",11,Font.PLAIN,new Color(183,206,199)));sidebar.add(ready);shell.add(sidebar,BorderLayout.WEST);
         JPanel content=new JPanel();content.setOpaque(false);content.setLayout(new BoxLayout(content,BoxLayout.Y_AXIS));content.setBorder(BorderFactory.createEmptyBorder(31,35,27,35));shell.add(content,BorderLayout.CENTER);

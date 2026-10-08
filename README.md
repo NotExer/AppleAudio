@@ -1,4 +1,4 @@
-# Lector de pantalla a voz
+# AppleAudio
 
 Aplicación Java para Windows: al pulsar un atajo global captura la pantalla, extrae su texto y lo lee en voz alta.
 
@@ -22,3 +22,10 @@ En PowerShell, desde esta carpeta:
 Configura el atajo haciendo clic en el campo y pulsando la combinación deseada. La app queda escuchando incluso si su ventana no tiene el foco. Selecciona idioma, voz y velocidad; los cambios se aplican al instante.
 
 No se conservan capturas: se crea un PNG temporal durante el OCR y se borra al terminar.
+
+## Distribución
+
+`package.ps1` deja ambos formatos en `release`:
+
+- `AppleAudio\AppleAudio.exe`: edición portátil. Se abre directamente desde esa carpeta y no instala nada en AppData.
+- `AppleAudio-1.4.0.exe`: instalador opcional para quien prefiera accesos directos y menú Inicio.
