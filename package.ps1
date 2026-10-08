@@ -33,5 +33,6 @@ jpackage --type app-image @common
 if ($LASTEXITCODE -ne 0) { throw "Falló la creación de la edición portátil (código $LASTEXITCODE)." }
 jpackage --type exe @common --win-per-user-install --win-shortcut --win-menu --win-dir-chooser
 if ($LASTEXITCODE -ne 0) { throw "Falló la creación del instalador (código $LASTEXITCODE)." }
+Copy-Item (Join-Path $release 'AppleAudio-1.4.0.exe') (Join-Path $portable 'AppleAudio-Setup.exe') -Force
 Write-Host "Edición portátil: $(Join-Path $portable 'AppleAudio.exe')"
-Write-Host "Instalador creado en $release"
+Write-Host "Instalador: $(Join-Path $portable 'AppleAudio-Setup.exe')"

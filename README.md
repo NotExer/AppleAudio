@@ -28,4 +28,4 @@ No se conservan capturas: se crea un PNG temporal durante el OCR y se borra al t
 `package.ps1` deja ambos formatos en `release`:
 
 - `AppleAudio\AppleAudio.exe`: edición portátil. Se abre directamente desde esa carpeta y no instala nada en AppData.
-- `AppleAudio-1.4.0.exe`: instalador opcional para quien prefiera accesos directos y menú Inicio.
+- `AppleAudio\AppleAudio-Setup.exe`: instalador opcional, junto al ejecutable portátil, para quien prefiera accesos directos y menú Inicio.
