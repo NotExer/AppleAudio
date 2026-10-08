@@ -5,12 +5,15 @@ import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -32,9 +35,17 @@ public class LectorPantalla {
     private static final int MOD_ALT = 0x0001, MOD_CONTROL = 0x0002, MOD_SHIFT = 0x0004, MOD_WIN = 0x0008;
     private static final Preferences PREFS = Preferences.userRoot().node("AppleAudio");
     private static final Map<String, String> LANGUAGES = new LinkedHashMap<>();
-    private static final String PIPER_VOICE = "Voz neuronal española — Piper (sin conexión)";
+    private static final Map<String, VoiceProfile> PIPER_VOICES = new LinkedHashMap<>();
+    private static final Map<String, String> EDGE_VOICES = new LinkedHashMap<>();
+    private record VoiceProfile(String model, int speaker) { }
     static {
         LANGUAGES.put("Español", "spa");
+        PIPER_VOICES.put("España - Sara", new VoiceProfile("es_ES-sharvard-medium.onnx", 1));
+        PIPER_VOICES.put("España - Hugo", new VoiceProfile("es_ES-sharvard-medium.onnx", 0));
+        PIPER_VOICES.put("México - Claude", new VoiceProfile("es_MX-claude-high.onnx", 0));
+        PIPER_VOICES.put("México - Ald", new VoiceProfile("es_MX-ald-medium.onnx", 0));
+        EDGE_VOICES.put("Colombia - Salomé (en línea)", "es-CO-SalomeNeural");
+        EDGE_VOICES.put("Colombia - Gonzalo (en línea)", "es-CO-GonzaloNeural");
     }
 
     private JFrame frame;
@@ -60,11 +71,12 @@ public class LectorPantalla {
         configureAppearance();
         restoreShortcut();
         frame = new JFrame("AppleAudio");
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.setIconImage(createAppIcon());
         frame.setContentPane(createContent());
         frame.pack(); frame.setResizable(false);
         frame.setLocationRelativeTo(null); frame.setVisible(true);
+        installTraySupport();
         startHotkeyListener();
         loadVoices();
     }
@@ -92,7 +104,7 @@ public class LectorPantalla {
         languageBox.setSelectedItem(PREFS.get("language", "Español"));
         languageBox.addActionListener(e -> PREFS.put("language", (String) languageBox.getSelectedItem()));
         styleField(languageBox); settings.add(settingCard("IDIOMA",languageBox,elevated,secondary));
-        voiceBox = new JComboBox<>(); voiceBox.addItem(PIPER_VOICE);
+        voiceBox = new JComboBox<>(); PIPER_VOICES.keySet().forEach(voiceBox::addItem); EDGE_VOICES.keySet().forEach(voiceBox::addItem);
         voiceBox.addActionListener(e -> PREFS.put("voice", String.valueOf(voiceBox.getSelectedItem())));
         styleField(voiceBox);settings.add(settingCard("VOZ",voiceBox,elevated,secondary));content.add(settings);content.add(Box.createVerticalStrut(18));
         RoundedPanel rateCard=new RoundedPanel(18,elevated);rateCard.setLayout(new BorderLayout(15,0));rateCard.setBorder(BorderFactory.createEmptyBorder(13,18,12,18));rateCard.setMaximumSize(new Dimension(600,72));rateCard.add(label("Velocidad",11,Font.BOLD,secondary),BorderLayout.WEST);
@@ -101,7 +113,7 @@ public class LectorPantalla {
     }
     private JPanel settingCard(String title,JComponent field,Color fill,Color muted){RoundedPanel card=new RoundedPanel(18,fill);card.setLayout(new BoxLayout(card,BoxLayout.Y_AXIS));card.setBorder(BorderFactory.createEmptyBorder(13,16,13,16));card.add(label(title,11,Font.BOLD,muted));card.add(Box.createVerticalStrut(7));field.setMaximumSize(new Dimension(270,36));field.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));card.add(field);return card;}
     private JLabel label(String text,int size,int style,Color color){JLabel label=new JLabel(text);label.setFont(new Font("Segoe UI",style,size));label.setForeground(color);label.setAlignmentX(Component.LEFT_ALIGNMENT);return label;}
-    private void styleField(JComponent field){ field.setFont(new Font("Segoe UI",Font.PLAIN,13));field.setBorder(BorderFactory.createEmptyBorder(6,9,6,9)); }
+    private void styleField(JComponent field){ field.setFont(new Font("Segoe UI",Font.PLAIN,13));field.setBorder(BorderFactory.createEmptyBorder(6,12,6,10));field.setBackground(new Color(42,51,66));field.setForeground(Color.WHITE); if(field instanceof JComboBox<?> combo){combo.setUI(new ModernComboBoxUI());combo.setToolTipText("Haz clic para elegir una opción");} }
     private JPanel createSpeedControl() {
         speechRate=PREFS.getInt("speed",0);
         JPanel control=new JPanel(new GridLayout(1,3,2,0));control.setOpaque(false);ButtonGroup group=new ButtonGroup();
@@ -120,13 +132,26 @@ public class LectorPantalla {
         UIManager.put("ComboBox.arc", 12);
         UIManager.put("Component.focusWidth", 2);
         UIManager.put("Component.focusColor", new Color(117, 232, 185));
-        UIManager.put("ComboBox.buttonStyle", "none");
-        UIManager.put("ComboBox.buttonSeparatorWidth", 0);
+        UIManager.put("ComboBox.popupBackground", new Color(36,43,56));
+        UIManager.put("ComboBox.selectionBackground", new Color(55,112,94));
+        UIManager.put("ComboBox.selectionForeground", Color.WHITE);
         UIManager.put("ToggleButton.selectedBackground", new Color(65, 131, 106));
         UIManager.put("ToggleButton.selectedForeground", Color.WHITE);
     }
-    private Image createAppIcon() { BufferedImage image=new BufferedImage(256,256,BufferedImage.TYPE_INT_ARGB);Graphics2D g=image.createGraphics();g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);g.setPaint(new GradientPaint(0,0,new Color(75,160,126),256,256,new Color(37,90,138)));g.fillRoundRect(4,4,248,248,62,62);g.setColor(Color.WHITE);g.fillRoundRect(57,61,142,104,25,25);g.fillPolygon(new int[]{99,120,142},new int[]{164,190,164},3);g.setColor(new Color(43,104,137));for(int i=0;i<4;i++){int h=24+i*16;g.fillRoundRect(83+i*25,113-h/2,13,h,7,7);}g.dispose();return image; }
-    private static class RoundedPanel extends JPanel { private final int radius; private final Color fill; RoundedPanel(int radius,Color fill){this.radius=radius;this.fill=fill;setOpaque(false);} @Override protected void paintComponent(Graphics g){Graphics2D g2=(Graphics2D)g.create();g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);g2.setColor(fill);g2.fillRoundRect(0,0,getWidth(),getHeight(),radius,radius);g2.dispose();super.paintComponent(g);} }
+    private Image createAppIcon() { BufferedImage image=new BufferedImage(256,256,BufferedImage.TYPE_INT_ARGB);Graphics2D g=image.createGraphics();g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);g.setPaint(new GradientPaint(0,0,new Color(35,50,81),256,256,new Color(18,27,45)));g.fillRoundRect(4,4,248,248,62,62);g.setColor(new Color(119,235,190));int[] heights={48,84,120,84,48};for(int i=0;i<heights.length;i++){int h=heights[i];g.fillRoundRect(65+i*27,128-h/2,14,h,7,7);}g.dispose();return image; }
+    private void installTraySupport() {
+        if (!SystemTray.isSupported()) { frame.addWindowListener(new WindowAdapter(){ @Override public void windowClosing(WindowEvent e){ frame.setVisible(false); }}); return; }
+        PopupMenu menu=new PopupMenu(); MenuItem show=new MenuItem("Mostrar AppleAudio"), exit=new MenuItem("Salir"); menu.add(show);menu.add(exit);
+        TrayIcon icon=new TrayIcon(createAppIcon(),"AppleAudio",menu);icon.setImageAutoSize(true);
+        show.addActionListener(e->showWindow());icon.addActionListener(e->showWindow());exit.addActionListener(e->System.exit(0));
+        frame.addWindowListener(new WindowAdapter(){ @Override public void windowClosing(WindowEvent e){ frame.setVisible(false);icon.displayMessage("AppleAudio","Sigue activo en segundo plano.",TrayIcon.MessageType.NONE); }});
+        try { SystemTray.getSystemTray().add(icon); } catch (AWTException ignored) { }
+    }
+    private void showWindow(){ frame.setVisible(true);frame.setExtendedState(JFrame.NORMAL);frame.toFront();frame.requestFocus(); }
+    private static class ModernComboBoxUI extends BasicComboBoxUI {
+        @Override protected JButton createArrowButton(){ return new JButton(){ {setBorder(BorderFactory.createEmptyBorder());setContentAreaFilled(false);setFocusable(false);setPreferredSize(new Dimension(32,30));} @Override protected void paintComponent(Graphics g){Graphics2D g2=(Graphics2D)g.create();g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);g2.setColor(new Color(181,193,211));g2.setStroke(new BasicStroke(1.8f,BasicStroke.CAP_ROUND,BasicStroke.JOIN_ROUND));int x=getWidth()/2,y=getHeight()/2-2;g2.drawLine(x-5,y,x,y+5);g2.drawLine(x,y+5,x+5,y);g2.dispose();} }; }
+    }
+        private static class RoundedPanel extends JPanel { private final int radius; private final Color fill; RoundedPanel(int radius,Color fill){this.radius=radius;this.fill=fill;setOpaque(false);} @Override protected void paintComponent(Graphics g){Graphics2D g2=(Graphics2D)g.create();g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);g2.setColor(fill);g2.fillRoundRect(0,0,getWidth(),getHeight(),radius,radius);g2.dispose();super.paintComponent(g);} }
     private void restoreShortcut() {
         modifiers=PREFS.getInt("modifiers",MOD_CONTROL|MOD_SHIFT); virtualKey=PREFS.getInt("key",KeyEvent.VK_R);
     }
@@ -266,27 +291,35 @@ public class LectorPantalla {
     private void speak(String text) throws Exception {
         if(speaking!=null&&speaking.isAlive()) speaking.destroyForcibly();
         text=naturalizePunctuation(text); String text64=Base64.getEncoder().encodeToString(text.getBytes(StandardCharsets.UTF_16LE)); String voice=String.valueOf(voiceBox.getSelectedItem());
-        if(PIPER_VOICE.equals(voice)) { speakWithPiper(text); return; }
+        if(PIPER_VOICES.containsKey(voice)) { speakWithPiper(text,PIPER_VOICES.get(voice)); return; }
+        if(EDGE_VOICES.containsKey(voice)) { speakWithEdge(text,EDGE_VOICES.get(voice)); return; }
         String voice64=Base64.getEncoder().encodeToString(voice.getBytes(StandardCharsets.UTF_16LE));
         String script="$t=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('"+text64+"'));$v=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('"+voice64+"'));Add-Type -AssemblyName System.Speech;$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;$match=$s.GetInstalledVoices()|Where-Object {$_.VoiceInfo.Name -eq $v}|Select-Object -First 1;if($match){$s.SelectVoice($v)};$s.Rate="+speechRate+";$safe=[Security.SecurityElement]::Escape($t);$safe=$safe -replace ',','<break time=''180ms''/>' -replace ';','<break time=''280ms''/>' -replace '([.!?])','$1<break time=''480ms''/>';$s.SpeakSsml(\"<speak version='1.0' xml:lang='es-ES'><prosody rate='"+speechRate+"'>$safe</prosody></speak>\")";
         String encoded=Base64.getEncoder().encodeToString(script.getBytes(StandardCharsets.UTF_16LE)); speaking=new ProcessBuilder("powershell.exe","-NoProfile","-EncodedCommand",encoded).start();
     }
-    private void speakWithPiper(String text) throws Exception {
-        File executable=bundledFile("piper\\piper-voice.exe"); File model=bundledFile("piper\\es_ES-sharvard-medium.onnx");
+    private void speakWithPiper(String text,VoiceProfile profile) throws Exception {
+        File executable=bundledFile("piper\\piper-voice.exe"); File model=bundledFile("piper\\"+profile.model());
         if(!executable.isFile()||!model.isFile()) throw new IllegalStateException("La voz neuronal no está disponible en esta versión.");
         Path source=Files.createTempFile("lector-texto-", ".txt"), audio=Files.createTempFile("lector-voz-", ".wav");
         Files.writeString(source,text,StandardCharsets.UTF_8);
-        Process synthesis=new ProcessBuilder(executable.getAbsolutePath(),model.getAbsolutePath(),source.toString(),audio.toString()).redirectErrorStream(true).start();
+        Process synthesis=new ProcessBuilder(executable.getAbsolutePath(),model.getAbsolutePath(),source.toString(),audio.toString(),String.valueOf(profile.speaker())).redirectErrorStream(true).start();
         String log=readAll(synthesis.getInputStream()); if(synthesis.waitFor()!=0) throw new IllegalStateException("Voz neuronal: "+log.trim());
         String path64=Base64.getEncoder().encodeToString(audio.toString().getBytes(StandardCharsets.UTF_16LE));
         String script="$p=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('"+path64+"'));(New-Object Media.SoundPlayer $p).PlaySync();Remove-Item -LiteralPath $p -Force";
         String command=Base64.getEncoder().encodeToString(script.getBytes(StandardCharsets.UTF_16LE)); speaking=new ProcessBuilder("powershell.exe","-NoProfile","-EncodedCommand",command).start(); Files.deleteIfExists(source);
     }
+    private void speakWithEdge(String text,String voice) throws Exception {
+        File executable=bundledFile("piper\\edge-voice.exe"); if(!executable.isFile()) throw new IllegalStateException("La voz colombiana no está disponible en esta versión.");
+        Path source=Files.createTempFile("lector-texto-", ".txt"), audio=Files.createTempFile("lector-voz-", ".mp3"); Files.writeString(source,text,StandardCharsets.UTF_8);
+        Process synthesis=new ProcessBuilder(executable.getAbsolutePath(),voice,source.toString(),audio.toString()).redirectErrorStream(true).start(); String output=readAll(synthesis.getInputStream()); if(synthesis.waitFor()!=0) throw new IllegalStateException("No se pudo generar la voz en línea: "+output.trim());
+        String path64=Base64.getEncoder().encodeToString(audio.toString().getBytes(StandardCharsets.UTF_16LE)); String script="$p=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('"+path64+"'));Add-Type -AssemblyName PresentationCore;$player=New-Object System.Windows.Media.MediaPlayer;$player.Open([Uri]$p);$player.Play();while(!$player.NaturalDuration.HasTimeSpan){Start-Sleep -Milliseconds 80};Start-Sleep -Milliseconds ([int]$player.NaturalDuration.TimeSpan.TotalMilliseconds+100);$player.Close();Remove-Item -LiteralPath $p -Force";
+        String command=Base64.getEncoder().encodeToString(script.getBytes(StandardCharsets.UTF_16LE));speaking=new ProcessBuilder("powershell.exe","-NoProfile","-EncodedCommand",command).start();Files.deleteIfExists(source);
+    }
     private File bundledFile(String relative) {
         try { File jar=new File(LectorPantalla.class.getProtectionDomain().getCodeSource().getLocation().toURI()); return new File(jar.getParentFile(),relative); } catch(Exception e) { return new File(relative); }
     }
     private String naturalizePunctuation(String text) { return text.replaceAll("\\s+", " ").replaceAll("\\s*([,;:.!?])\\s*", "$1 ").replace("…", "...").trim(); }
-    private void loadVoices() { new Thread(() -> { try { Process p=new ProcessBuilder("powershell.exe","-NoProfile","-Command","Add-Type -AssemblyName System.Speech;(New-Object System.Speech.Synthesis.SpeechSynthesizer).GetInstalledVoices() | Where-Object {$_.VoiceInfo.Culture.Name -like 'es-*'} | ForEach-Object {$_.VoiceInfo.Name}").start();String list=readAll(p.getInputStream());p.waitFor();SwingUtilities.invokeLater(()-> {String selected=PREFS.get("voice",PIPER_VOICE);voiceBox.removeAllItems();voiceBox.addItem(PIPER_VOICE);for(String line:list.split("\\R"))if(!line.isBlank())voiceBox.addItem(line.trim());if(voiceBox.getItemCount()==1 || selected.equals("Microsoft David Desktop")||selected.equals("Microsoft Zira Desktop")||selected.equals("Microsoft Mark Desktop")||selected.equals("Voz predeterminada de Windows"))selected=PIPER_VOICE;voiceBox.setSelectedItem(selected);}); }catch(Exception ignored){} },"voice-loader").start(); }
+    private void loadVoices() { new Thread(() -> { try { Process p=new ProcessBuilder("powershell.exe","-NoProfile","-Command","Add-Type -AssemblyName System.Speech;(New-Object System.Speech.Synthesis.SpeechSynthesizer).GetInstalledVoices() | Where-Object {$_.VoiceInfo.Culture.Name -like 'es-*'} | ForEach-Object {$_.VoiceInfo.Name}").start();String list=readAll(p.getInputStream());p.waitFor();SwingUtilities.invokeLater(()-> {String selected=PREFS.get("voice","España - Sara");voiceBox.removeAllItems();PIPER_VOICES.keySet().forEach(voiceBox::addItem);EDGE_VOICES.keySet().forEach(voiceBox::addItem);for(String line:list.split("\\R"))if(!line.isBlank())voiceBox.addItem(line.trim());if(selected.equals("Microsoft David Desktop")||selected.equals("Microsoft Zira Desktop")||selected.equals("Microsoft Mark Desktop")||selected.equals("Voz predeterminada de Windows"))selected="España - Sara";voiceBox.setSelectedItem(selected);}); }catch(Exception ignored){} },"voice-loader").start(); }
     private String readAll(InputStream in) throws Exception { ByteArrayOutputStream out=new ByteArrayOutputStream();in.transferTo(out);return out.toString(StandardCharsets.UTF_8); }
     private void setStatus(String message,boolean error) { if(status!=null){status.setText(message);status.setForeground(error?new Color(170,55,45):new Color(45,95,155));} }
 }

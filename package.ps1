@@ -12,8 +12,9 @@ Copy-Item (Join-Path $PSScriptRoot 'lib\*.jar') $input
 $piper = Join-Path $input 'piper'
 New-Item -ItemType Directory -Force -Path $piper | Out-Null
 Copy-Item (Join-Path $PSScriptRoot 'dist\piper-voice.exe') $piper
-Copy-Item (Join-Path $PSScriptRoot 'piper-assets\voice\es_ES-sharvard-medium.onnx') $piper
-Copy-Item (Join-Path $PSScriptRoot 'piper-assets\voice\es_ES-sharvard-medium.onnx.json') $piper
+Copy-Item (Join-Path $PSScriptRoot 'dist\edge-voice.exe') $piper
+Copy-Item (Join-Path $PSScriptRoot 'piper-assets\voice\*.onnx') $piper
+Copy-Item (Join-Path $PSScriptRoot 'piper-assets\voice\*.onnx.json') $piper
 $ocrDestination = Join-Path $input 'tesseract'
 New-Item -ItemType Directory -Force -Path $ocrDestination | Out-Null
 Copy-Item 'C:\Program Files\Tesseract-OCR\tesseract.exe' $ocrDestination
@@ -28,11 +29,11 @@ $env:Path = "$wix;$env:Path"
 & (Join-Path $PSScriptRoot 'generate-icon.ps1')
 $portable = Join-Path $release 'AppleAudio'
 if (Test-Path -LiteralPath $portable) { Remove-Item -LiteralPath $portable -Recurse -Force }
-$common = @('--dest', $release, '--name', 'AppleAudio', '--app-version', '1.4.0', '--input', $input, '--main-jar', 'LectorPantalla.jar', '--main-class', 'LectorPantalla', '--icon', (Join-Path $PSScriptRoot 'assets\sonora.ico'), '--vendor', 'AppleAudio', '--description', 'Lee en voz alta el texto visible en pantalla.')
+$common = @('--dest', $release, '--name', 'AppleAudio', '--app-version', '1.5.0', '--input', $input, '--main-jar', 'LectorPantalla.jar', '--main-class', 'LectorPantalla', '--icon', (Join-Path $PSScriptRoot 'assets\sonora.ico'), '--vendor', 'AppleAudio', '--description', 'Lee en voz alta el texto visible en pantalla.')
 jpackage --type app-image @common
 if ($LASTEXITCODE -ne 0) { throw "Falló la creación de la edición portátil (código $LASTEXITCODE)." }
 jpackage --type exe @common --win-per-user-install --win-shortcut --win-menu --win-dir-chooser
 if ($LASTEXITCODE -ne 0) { throw "Falló la creación del instalador (código $LASTEXITCODE)." }
-Copy-Item (Join-Path $release 'AppleAudio-1.4.0.exe') (Join-Path $portable 'AppleAudio-Setup.exe') -Force
+Copy-Item (Join-Path $release 'AppleAudio-1.5.0.exe') (Join-Path $portable 'AppleAudio-Setup.exe') -Force
 Write-Host "Edición portátil: $(Join-Path $portable 'AppleAudio.exe')"
 Write-Host "Instalador: $(Join-Path $portable 'AppleAudio-Setup.exe')"
